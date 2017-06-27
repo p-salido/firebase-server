@@ -18,6 +18,8 @@ var firebase = require('firebase');
 var _log = require('debug')('firebase-server');
 var http = require('http');
 var url = require('url');
+var fbServer = require('./bin/firebase-server');
+var shouldPrint = fbServer.printLog
 
 // In order to produce new Firebase clients that do not conflict with existing
 // instances of the Firebase client, each one must have a unique name.
@@ -61,19 +63,19 @@ function HttpServer(port, db) {
   function read(path, cb) {
     db.ref(path).once('value').then(cb)
   }
-  
+
   function writeResponse(response, payload) {
     response.writeHead(200, {"Content-Type": "application/json"})
     response.write(JSON.stringify(payload))
     response.end()
   }
-  
+
   function handleReadRequest(request, response, path) {
     read(path, function(snapshot) {
       writeResponse(response, snapshot.val())
     })
   }
-  
+
   function handleWriteRequest(request, response, path, writeMethod) {
     var body = ''
     request.on('data', function(data) {
@@ -91,12 +93,12 @@ function HttpServer(port, db) {
       }
     });
   }
-  
+
   function handleDeleteRequest(request, response, path) {
     db.ref(path).remove()
     writeResponse(response, null)
   }
-  
+
   var server = http.createServer(function(request, response) {
     var urlParts = url.parse(request.url)
     var path = urlParts.pathname
@@ -106,7 +108,9 @@ function HttpServer(port, db) {
       return
     }
     path = path.replace(/\.json$/, '')
-    console.log(request.method + ' ' + path)
+		if (shouldPrint) {
+    	console.log(request.method + ' ' + path)
+		}
     switch (request.method) {
       case 'GET':
         handleReadRequest(request, response, path);
@@ -125,8 +129,8 @@ function HttpServer(port, db) {
         response.end()
     }
   });
-  
-  server.listen(port, '0.0.0.0');        
+
+  server.listen(port, '0.0.0.0');
   return server;
 }
 
@@ -157,7 +161,7 @@ function FirebaseServer(port, name, data) {
 	this.baseRef = this.app.database().ref();
 
 	this.baseRef.set(data || null);
-        
+
         this._https = new HttpServer(port, db);
 	this._wss = new WebSocketServer({
 		server: this._https

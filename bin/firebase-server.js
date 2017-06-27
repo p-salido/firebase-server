@@ -6,6 +6,7 @@ var fs = require('fs');
 var path = require('path');
 var cli = require('cli');
 var debug = require('debug');
+var printLog = false
 
 cli.parse({
 	verbose: ['v', 'Enable verbose (debug) output'],
@@ -14,10 +15,15 @@ cli.parse({
 	data: ['d', 'JSON data to bootstrap the server with', 'string', '{}'],
 	file: ['f', 'JSON file to bootstrap the server with', 'file'],
 	rules: ['r', 'JSON file with security rules to load', 'file'],
-	secret: ['s', 'Shared client auth token secret', 'string']
+	secret: ['s', 'Shared client auth token secret', 'string'],
+	log: ['l', 'Logs request method and path'],
 });
 
 cli.main(function (args, options) {
+	if (options.log) {
+		module.exports.printLog = true
+	}
+
 	if (options.verbose) {
 		debug.enable('firebase-server*');
 	}
@@ -66,3 +72,5 @@ cli.main(function (args, options) {
 
 	this.ok('Listening on port ' + options.port);
 });
+
+module.exports.printLog = printLog
